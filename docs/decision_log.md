@@ -329,3 +329,16 @@ Remaining issue: repetition loops on some samples inflate CER.
 2. Freeze vision encoder explicitly (current 53% trainable may corrupt it)
 3. Use mlx-vlm's built-in SFT trainer (handles masking + freezing properly)
 4. Train longer (2000+ steps) with warmup schedule
+
+### Decision 18: PaddleOCR-VL-1.5 training data is proprietary (2026-04-20)
+
+**Source**: [arXiv:2601.21957v2](https://arxiv.org/abs/2601.21957)
+- Pre-training: 46M image-text pairs (NOT public)
+- Post-training: 5.6M instruction samples (NOT public)
+- Bengali: "newly added" in v1.5 among 111 languages — zero specifics on Bengali sample count or source
+- Base LM: ERNIE-4.5-0.3B-Paddle
+- Only 23 demo images + 2.8K eval benchmark published
+
+Our dataset (rifathridoy/bengali-ocr-synthetic, 30K) is completely independent.
+
+**Implication**: fine-tuning is our only path to improving Bengali OCR on this model since we can't examine or augment the base training data. The zero-shot CER of 0.668 is the floor — our job is to push it below EasyOCR's 0.153.
