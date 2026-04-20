@@ -1,0 +1,11 @@
+{
+  "n": 200,
+  "cer_mean": 18.62508575011844,
+  "wer_mean": 1.0,
+  "ger_mean": 32.99060817545032,
+  "cer_corpus": 13.697164258962012,
+  "wer_corpus": 1.0,
+  "elapsed_s": 772.24,
+  "model": "gemma4-e4b-lora-bengali-ocr",
+  "adapter": "results/adapters/bengali_ocr_lora/final/adapters.safetensors"
+}

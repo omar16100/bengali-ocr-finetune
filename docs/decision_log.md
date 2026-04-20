@@ -210,3 +210,25 @@ mlx-vlm's `get_peft_model` signature is `(model, linear_layers, rank, alpha, dro
 1. Fix evaluation to use `mlx_vlm.generate()` (which handles KV cache, sampling, etc.)
 2. If that doesn't help, check: LoRA adapter loading, chat template, prompt format
 3. Baselines comparison: EasyOCR 15.3% CER is the target
+
+### Decision 13: Vision pipeline broken on Gemma 4 E4B via mlx-vlm (2026-04-20)
+
+**Discovery**: The base model (no LoRA) cannot do ANY OCR — English or Bengali. It echoes the prompt verbatim instead of reading images. This means:
+1. The model is not receiving image information
+2. LoRA training "converged" (loss 25.6 → 0.046) on text-only patterns, never seeing images
+3. The `।।।।` output was collapsed LoRA, the "CER 13.7" was prompt repetition
+
+**Test results**:
+- "Read the text in this image." + English text image → outputs "Read the text in this image." (repeated)
+- Bengali prompt + Bengali image → outputs Bengali prompt (repeated)
+- Both with and without LoRA: same behavior
+
+**Root cause**: `mlx-vlm` is not injecting image tokens for Gemma 4 E4B architecture. The `generate()` function processes the prompt as text-only.
+
+**Impact**: All fine-tuning results are INVALID. The model was never training on vision — just text patterns.
+
+**Options being evaluated**:
+1. Try Qwen3-VL (confirmed working on mlx-vlm for vision tasks)
+2. Try official Gemma 4 26B-A4B (larger, might have better mlx-vlm support)
+3. Use HuggingFace transformers + MPS directly (bypasses mlx-vlm)
+4. File upstream issue on mlx-vlm for E4B vision support
