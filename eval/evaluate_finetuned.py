@@ -13,6 +13,7 @@ from pathlib import Path
 import mlx
 import mlx.core as mx
 from mlx_vlm import load, generate
+from mlx_vlm.prompt_utils import apply_chat_template
 from mlx_vlm.trainer.utils import find_all_linear_names, get_peft_model
 from safetensors.mlx import load_file as load_mlx
 
@@ -91,10 +92,15 @@ def evaluate(model, processor):
         img.save(str(tmp_img))
 
         try:
-            # Use mlx_vlm.generate — handles KV cache, chat template, sampling
+            # CRITICAL: must apply_chat_template to inject <|image|> tokens.
+            # Without this, pixel_values are computed but scattered into zero
+            # positions and the model ignores images entirely (codex fix 2026-04-20).
+            formatted_prompt = apply_chat_template(
+                processor, model.config, PROMPT, num_images=1
+            )
             result = generate(
                 model, processor,
-                prompt=PROMPT,
+                prompt=formatted_prompt,
                 image=str(tmp_img),
                 max_tokens=128,
                 temp=0.0,

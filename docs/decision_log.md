@@ -232,3 +232,35 @@ mlx-vlm's `get_peft_model` signature is `(model, linear_layers, rank, alpha, dro
 2. Try official Gemma 4 26B-A4B (larger, might have better mlx-vlm support)
 3. Use HuggingFace transformers + MPS directly (bypasses mlx-vlm)
 4. File upstream issue on mlx-vlm for E4B vision support
+
+### Decision 14: Vision pipeline FIXED — apply_chat_template was missing (2026-04-20)
+
+**Root cause** (diagnosed by codex): `mlx_vlm.generate()` does NOT auto-inject `<|image|>` tokens. Must call `apply_chat_template(processor, model.config, prompt, num_images=1)` FIRST. Without template, pixel_values are computed but scattered into zero positions → model ignores images.
+
+**Key insight**: Training code (`finetune_bengali_ocr.py:145`) WAS correct — it used `processor.apply_chat_template()`. Only the eval code was broken. LoRA adapters ARE trained on vision+text.
+
+**Fix**: 2-line change in `eval/evaluate_finetuned.py`:
+```python
+from mlx_vlm.prompt_utils import apply_chat_template
+formatted = apply_chat_template(processor, model.config, PROMPT, num_images=1)
+result = generate(model, processor, prompt=formatted, image=img_path, ...)
+```
+
+**Quick 10-sample eval results (with fix)**:
+- Sample 9: **PERFECT** — ref=লঙ্কা, pred=লঙ্কা
+- Most samples: model reads image but wraps answer in "ছবিতে লেখা আছে:" (written in image:)
+- CER=6.4 corpus (high due to explanatory wrapper text, not because OCR failed)
+
+**Next steps to improve CER**:
+1. Strip explanatory prefix from predictions
+2. Change prompt to "Output ONLY the Bengali text, no explanation"  
+3. Re-evaluate with cleaner prompt
+4. Consider retraining with stricter prompt format
+
+**Save method evolution (complete):**
+1. mx.savez → nanobind >1024 limit
+2. numpy.savez → bf16→numpy conversion fail
+3. safetensors.mlx → same bf16 issue (calls np.asarray internally)
+4. safetensors.mlx + astype(mx.float16) → ✅ WORKS
+
+Full codex diagnosis: /Users/macmini/projects/codex/bengali_ocr_vision_fix_20apr2026.txt
