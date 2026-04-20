@@ -1,0 +1,10 @@
+{
+  "n": 200,
+  "cer_mean": 4.939051105008915,
+  "wer_mean": 2.534666666666667,
+  "ger_mean": 4.959309587342481,
+  "cer_corpus": 3.2204387372926697,
+  "wer_corpus": 2.1590106007067136,
+  "model": "paddleocr-vl-1.5-lora-v2-bengali",
+  "elapsed_s": 125.2
+}

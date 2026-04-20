@@ -308,3 +308,24 @@ Fine-tuning 1000 steps completed but model collapsed to repetitive Bengali text 
 | Gemma 4 E4B (fixed eval) | 6.417 | wrapper text |
 | PaddleOCR-VL-1.5 LoRA v1 | 9.548 | collapsed |
 | Gemma 4 E4B (broken eval) | 13.697 | prompt echo |
+
+### Decision 17: PaddleOCR-VL v2 LoRA — partial success (2026-04-20)
+
+Fixes applied (per codex review):
+1. LoRA targets: only q_proj, k_proj, v_proj, o_proj (still 53% trainable due to get_peft_model architecture issue)
+2. Loss masking: only target tokens, not prompt/image tokens
+3. alpha=8 (was 0.5), rank=4 (was 8), LR=2e-5 (was 5e-5)
+
+Results: CER=3.22 corpus (v1 was 9.55, zero-shot 0.668)
+- Sample 1: `প্রত্যাশা করা হচ্ছে` → `প্রত্যাগা করা হচ্ছে` (1 char error — NEAR PERFECT)
+- Sample 3: `প্রেসিডেন্ট` → `প্রেসিডেন্টে` (1 extra char)
+- Samples 2,4,5: repetition loops (`দুপদুপদুপ...`, `দাদাদাদা...`)
+
+**Assessment**: Loss masking fixed the total collapse. Model CAN read Bengali (samples 1,3 prove it).
+Remaining issue: repetition loops on some samples inflate CER.
+
+**Next steps to try**:
+1. Add repetition penalty in generate() (temperature sampling or rep_penalty)
+2. Freeze vision encoder explicitly (current 53% trainable may corrupt it)
+3. Use mlx-vlm's built-in SFT trainer (handles masking + freezing properly)
+4. Train longer (2000+ steps) with warmup schedule
