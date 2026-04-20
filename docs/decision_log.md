@@ -264,3 +264,21 @@ result = generate(model, processor, prompt=formatted, image=img_path, ...)
 4. safetensors.mlx + astype(mx.float16) → ✅ WORKS
 
 Full codex diagnosis: /Users/macmini/projects/codex/bengali_ocr_vision_fix_20apr2026.txt
+
+### Decision 15: PaddleOCR-VL-1.5 zero-shot baseline (2026-04-20)
+
+| Engine | CER (corpus) | CER (macro) | WER |
+|---|---|---|---|
+| EasyOCR | 0.153 | 0.182 | 0.474 |
+| **PaddleOCR-VL-1.5 zero-shot** | **0.668** | 0.734 | 0.813 |
+| Gemma 4 E4B (LoRA, broken eval) | 0.917 | 0.925 | 1.000 |
+| Gemma 4 E4B (fixed eval) | 6.417 | 8.412 | 9.817 |
+| Gemma 4 E4B (base zero-shot) | N/A | N/A | N/A |
+| Tesseract | 0.722 | 0.770 | 0.949 |
+
+Observations:
+- Beats Tesseract zero-shot (0.668 vs 0.722)
+- Some samples near-perfect: `প্রত্যাশা করা হচ্ছে` → `প্রত্যাশ। করার হচ্ছে`
+- Script confusion: some outputs in Tibetan/Devanagari instead of Bengali
+- EasyOCR (traditional engine) still leads at 0.153 — fine-tuning should close the gap
+- Model is tiny (0.9B, 704MB) → training will be very fast

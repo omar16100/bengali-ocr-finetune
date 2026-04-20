@@ -1,0 +1,10 @@
+{
+  "n": 200,
+  "cer_mean": 0.7341513908849433,
+  "wer_mean": 0.8129166666666666,
+  "ger_mean": 1.2092653019495123,
+  "cer_corpus": 0.6677367576243981,
+  "wer_corpus": 0.7561837455830389,
+  "model": "paddleocr-vl-1.5-base-zeroshot",
+  "elapsed_s": 54.52
+}
