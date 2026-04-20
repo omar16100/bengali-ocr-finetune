@@ -150,7 +150,7 @@ def run_finetuning(train_data, test_data):
 
             input_ids = mx.array(inputs["input_ids"])
             pixel_values = mx.array(inputs["pixel_values"]) if "pixel_values" in inputs else None
-            labels = input_ids.copy()
+            labels = input_ids  # MLX arrays are immutable; no copy needed
 
             # Forward + backward
             loss, grads = loss_and_grad(model, input_ids, pixel_values, labels)
@@ -171,8 +171,11 @@ def run_finetuning(train_data, test_data):
                 log.info("saving adapter at step %d", step + 1)
                 adapter_path = ADAPTER_DIR / f"step_{step + 1}"
                 adapter_path.mkdir(exist_ok=True)
-                mx.savez(str(adapter_path / "adapters.npz"),
-                         **dict(mlx.utils.tree_flatten(model.trainable_parameters())))
+                # Save LoRA adapters via safetensors (mx.savez has nanobind
+                # >1024 kwarg limit; np.array has bfloat16 conversion issues).
+                from safetensors.mlx import save_file as save_mlx
+                params = dict(mlx.utils.tree_flatten(model.trainable_parameters()))
+                save_mlx(params, str(adapter_path / "adapters.safetensors"))
 
                 # Save training curve
                 with open(RESULTS_DIR / "training_curve.json", "w") as f:
@@ -190,8 +193,9 @@ def run_finetuning(train_data, test_data):
     # Save final adapter
     final_path = ADAPTER_DIR / "final"
     final_path.mkdir(exist_ok=True)
-    mx.savez(str(final_path / "adapters.npz"),
-             **dict(mlx.utils.tree_flatten(model.trainable_parameters())))
+    from safetensors.mlx import save_file as save_mlx
+    params = dict(mlx.utils.tree_flatten(model.trainable_parameters()))
+    save_mlx(params, str(final_path / "adapters.safetensors"))
 
     elapsed = time.time() - t0
     log.info("training complete: %d steps in %.0fs (%.2f steps/s), final_loss=%.4f",
