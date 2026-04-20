@@ -282,3 +282,29 @@ Observations:
 - Script confusion: some outputs in Tibetan/Devanagari instead of Bengali
 - EasyOCR (traditional engine) still leads at 0.153 — fine-tuning should close the gap
 - Model is tiny (0.9B, 704MB) → training will be very fast
+
+### Decision 16: PaddleOCR-VL-1.5 LoRA collapsed (2026-04-20)
+
+Fine-tuning 1000 steps completed but model collapsed to repetitive Bengali text ("প্রতিটির সুপ্যাদারীতিকাবেশনীতি..."). CER=9.548 — much worse than zero-shot 0.668.
+
+**Root causes identified**:
+1. **53% trainable params** (137M/258M) — `find_all_linear_names` targets ALL linear layers including vision encoder. For 0.9B model, this is near-full fine-tuning → catastrophic forgetting
+2. **Training prompt format**: used `formatted_prompt + text` without proper input/output separation — model couldn't learn where prompt ends and OCR output begins
+3. **Loss plateau at 7.06** (from 10.7) — model was memorizing a fixed pattern, not learning OCR
+
+**Fixes needed for next attempt**:
+1. Target ONLY language model attention layers (not vision encoder, not embeddings)
+2. Use proper train/target separation with loss masking on prompt tokens
+3. Lower LoRA rank (4) for smaller model
+4. Consider using mlx-vlm's built-in SFT trainer instead of custom loop
+
+**Comparison table** (all Bengali OCR attempts):
+
+| Engine | CER (corpus) | Status |
+|---|---|---|
+| EasyOCR | 0.153 | target |
+| PaddleOCR-VL-1.5 zero-shot | 0.668 | base works |
+| Tesseract | 0.722 | baseline |
+| Gemma 4 E4B (fixed eval) | 6.417 | wrapper text |
+| PaddleOCR-VL-1.5 LoRA v1 | 9.548 | collapsed |
+| Gemma 4 E4B (broken eval) | 13.697 | prompt echo |
