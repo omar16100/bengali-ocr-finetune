@@ -171,10 +171,12 @@ def run_finetuning(train_data, test_data):
                 log.info("saving adapter at step %d", step + 1)
                 adapter_path = ADAPTER_DIR / f"step_{step + 1}"
                 adapter_path.mkdir(exist_ok=True)
-                # Save LoRA adapters via safetensors (mx.savez has nanobind
-                # >1024 kwarg limit; np.array has bfloat16 conversion issues).
+                # Save LoRA adapters. Cast bf16→f16 first because:
+                # - mx.savez: nanobind >1024 kwarg limit
+                # - np.array: bf16 not supported in numpy
+                # - safetensors: internally calls np.asarray, same bf16 issue
                 from safetensors.mlx import save_file as save_mlx
-                params = dict(mlx.utils.tree_flatten(model.trainable_parameters()))
+                params = {k: v.astype(mx.float16) for k, v in mlx.utils.tree_flatten(model.trainable_parameters())}
                 save_mlx(params, str(adapter_path / "adapters.safetensors"))
 
                 # Save training curve
@@ -194,7 +196,7 @@ def run_finetuning(train_data, test_data):
     final_path = ADAPTER_DIR / "final"
     final_path.mkdir(exist_ok=True)
     from safetensors.mlx import save_file as save_mlx
-    params = dict(mlx.utils.tree_flatten(model.trainable_parameters()))
+    params = {k: v.astype(mx.float16) for k, v in mlx.utils.tree_flatten(model.trainable_parameters())}
     save_mlx(params, str(final_path / "adapters.safetensors"))
 
     elapsed = time.time() - t0

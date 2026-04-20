@@ -189,3 +189,24 @@ mlx-vlm's `get_peft_model` signature is `(model, linear_layers, rank, alpha, dro
 ├── docs/                  # this file + future findings
 └── todo.md
 ```
+
+### Decision 12: Fine-tuning v5 completed — training works, eval broken (2026-04-20)
+
+**Training**: 500 steps in 337s (1.48 steps/s). Loss: 25.6 → 0.046. Excellent convergence.
+
+**Save fix journey** (4 attempts):
+1. `mx.savez` — nanobind >1024 kwargs limit
+2. `numpy.savez` — bfloat16 not supported in numpy
+3. `safetensors.mlx.save_file` — internally calls np.asarray, same bf16 issue
+4. **`save_file({k: v.astype(mx.float16)})` — cast bf16→f16 first** ✅
+
+11 adapter checkpoints saved (every 50 steps + final) as safetensors.
+
+**Evaluation**: CER=0.917 (92% error — WORSE than Tesseract 72%). Model produces garbage at inference.
+
+**Root cause hypothesis**: manual greedy decode (`model(input_ids) → argmax → append → repeat`) doesn't maintain KV cache. Each token prediction lacks context of previous tokens. Should use `mlx_vlm.generate()` or implement proper cached generation.
+
+**Next steps**:
+1. Fix evaluation to use `mlx_vlm.generate()` (which handles KV cache, sampling, etc.)
+2. If that doesn't help, check: LoRA adapter loading, chat template, prompt format
+3. Baselines comparison: EasyOCR 15.3% CER is the target
