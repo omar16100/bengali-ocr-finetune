@@ -1,0 +1,27 @@
+{
+  "tesseract": {
+    "n": 200,
+    "cer_mean": 0.7694668695304885,
+    "wer_mean": 0.94875,
+    "ger_mean": 0.8636233419358419,
+    "cer_corpus": 0.7224178403755869,
+    "wer_corpus": 0.9069767441860465,
+    "engine": "tesseract",
+    "elapsed_s": 4.14,
+    "samples_per_sec": 48.26
+  },
+  "easyocr": {
+    "n": 200,
+    "cer_mean": 0.18163256569138922,
+    "wer_mean": 0.47375,
+    "ger_mean": 0.25829897186147194,
+    "cer_corpus": 0.15316901408450703,
+    "wer_corpus": 0.44573643410852715,
+    "engine": "easyocr",
+    "elapsed_s": 12.16,
+    "samples_per_sec": 16.45
+  },
+  "paddleocr": {
+    "error": "No models are available for the language 'bn' and OCR version None."
+  }
+}
