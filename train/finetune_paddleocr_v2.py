@@ -1,9 +1,9 @@
 """
-PaddleOCR-VL-1.5 Bengali OCR fine-tuning — v2 (fixed).
+PaddleOCR-VL-1.5 Bengali OCR fine-tuning: v2 (fixed).
 
 Fixes from v1 collapse:
 1. Target ONLY language model attention (q_proj, k_proj, v_proj, o_proj)
-   — NOT vision encoder (qkv, fc1, fc2, out_proj) or MLP (gate/up/down)
+   and NOT the vision encoder (qkv, fc1, fc2, out_proj) or MLP (gate/up/down)
 2. Loss masking: only compute loss on TARGET tokens, not prompt/image tokens
 3. Lower LoRA rank (4) for 0.9B model
 4. Lower learning rate (2e-5)
@@ -11,6 +11,7 @@ Fixes from v1 collapse:
 
 import json
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -30,12 +31,12 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MODEL_PATH = "/Users/macmini/models/PaddleOCR-VL-1.5-4bit"
+MODEL_PATH = os.environ.get("PADDLEOCR_MODEL_PATH", "mlx-community/PaddleOCR-VL-1.5-4bit")
 DATA_DIR = Path("data/bengali-ocr-synthetic")
 RESULTS_DIR = Path("results")
 ADAPTER_DIR = Path("results/adapters/paddleocr_vl_bengali_lora_v2")
 
-# Only target language model attention — freeze vision encoder + MLP
+# Only target language model attention: freeze vision encoder + MLP
 LORA_TARGET_LAYERS = ["q_proj", "k_proj", "v_proj", "o_proj"]
 LORA_RANK = 4
 LORA_ALPHA = 8.0  # codex: alpha=8 at rank=4, not 0.5
@@ -81,7 +82,7 @@ def run_finetuning(train_ds, test_ds):
     log.info("LoRA: %d trainable / %d total (%.2f%%)", trainable, total_p, 100*trainable/total_p)
 
     if trainable / total_p > 0.10:
-        log.warning("trainable ratio >10%% — risk of catastrophic forgetting")
+        log.warning("trainable ratio >10%%: risk of catastrophic forgetting")
 
     optimizer = optim.Adam(learning_rate=LEARNING_RATE)
     ADAPTER_DIR.mkdir(parents=True, exist_ok=True)
@@ -169,7 +170,7 @@ def run_finetuning(train_ds, test_ds):
             import traceback
             traceback.print_exc()
             if step < 5:
-                log.error("failing early — aborting")
+                log.error("failing early: aborting")
                 return None, None
             continue
 

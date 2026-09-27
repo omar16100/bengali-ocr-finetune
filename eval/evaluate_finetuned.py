@@ -6,6 +6,7 @@ greedy decode (which produced garbage CER=0.917 without KV cache).
 
 import json
 import logging
+import os
 import sys
 import time
 from pathlib import Path
@@ -30,7 +31,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MODEL_PATH = "/Users/macmini/models/gemma-4-e4b-it-4bit"
+MODEL_PATH = os.environ.get("GEMMA_MODEL_PATH", "mlx-community/gemma-4-e4b-it-4bit")
 ADAPTER_PATH = Path("results/adapters/bengali_ocr_lora/final/adapters.safetensors")
 DATA_DIR = Path("data/bengali-ocr-synthetic")
 RESULTS_DIR = Path("results")
@@ -170,7 +171,7 @@ def main():
     elif metrics["cer_corpus"] < 0.722:
         log.info("Beats Tesseract but not EasyOCR")
     else:
-        log.info("Worse than Tesseract — needs investigation")
+        log.info("Worse than Tesseract: needs investigation")
 
 
 if __name__ == "__main__":
