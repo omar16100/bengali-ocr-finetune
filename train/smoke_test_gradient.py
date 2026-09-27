@@ -3,11 +3,12 @@ Smoke test for mlx-vlm Gemma 4 gradient fix.
 Verifies that a single training step produces finite gradients
 on a vision-language model with LoRA.
 
-Uses SuperGemma4-26B-MLX-4bit (Gemma 4 architecture, already on disk).
-If that's too large, falls back to any available Gemma model.
+Uses Gemma 4 E4B (mlx-community/gemma-4-e4b-it-4bit, override with
+GEMMA_MODEL_PATH).
 """
 
 import logging
+import os
 import sys
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -24,7 +25,7 @@ def run_smoke_test():
         log.error("mlx_vlm not installed or import failed: %s", e)
         return False
 
-    model_path = "/Users/macmini/models/gemma-4-e4b-it-4bit"
+    model_path = os.environ.get("GEMMA_MODEL_PATH", "mlx-community/gemma-4-e4b-it-4bit")
     log.info("loading model from %s", model_path)
 
     try:
@@ -110,7 +111,7 @@ def run_smoke_test():
         log.info("gradient check: %d params, %d NaN, %d Inf", total_params, nan_count, inf_count)
 
         if nan_count > 0 or inf_count > 0:
-            log.error("FAIL: NaN/Inf gradients detected — fix incomplete")
+            log.error("FAIL: NaN/Inf gradients detected: fix incomplete")
             return False
 
         if not (0 < loss_val < 100):

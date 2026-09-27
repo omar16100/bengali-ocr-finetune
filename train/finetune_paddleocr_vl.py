@@ -3,7 +3,7 @@ Fine-tune PaddleOCR-VL-1.5 on Bengali OCR data using mlx-vlm LoRA.
 
 Model: mlx-community/PaddleOCR-VL-1.5-4bit (0.9B params, 704 MB)
 Dataset: rifathridoy/bengali-ocr-synthetic (27K train, 3K test)
-Method: LoRA (rank=8, alpha=1.0) — smaller model needs smaller rank
+Method: LoRA (rank=8, alpha=1.0): smaller model needs smaller rank
 Prompt: "OCR:" (PaddleOCR-VL's standard OCR prompt)
 """
 
@@ -29,7 +29,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-MODEL_PATH = "/Users/macmini/models/PaddleOCR-VL-1.5-4bit"
+MODEL_PATH = os.environ.get("PADDLEOCR_MODEL_PATH", "mlx-community/PaddleOCR-VL-1.5-4bit")
 DATA_DIR = Path("data/bengali-ocr-synthetic")
 RESULTS_DIR = Path("results")
 ADAPTER_DIR = Path("results/adapters/paddleocr_vl_bengali_lora")
@@ -116,7 +116,7 @@ def run_finetuning(train_ds, test_ds):
             tmp_img = "/tmp/paddleocr_train_tmp.png"
             img.save(tmp_img)
 
-            # Use prepare_inputs (same as generate()) — handles image tokens,
+            # Use prepare_inputs (same as generate()): handles image tokens,
             # grid_thw, and pixel_values correctly for PaddleOCR-VL.
             formatted = apply_chat_template(processor, model.config, PROMPT, num_images=1)
             # Append the target text for training
@@ -156,7 +156,7 @@ def run_finetuning(train_ds, test_ds):
             import traceback
             traceback.print_exc()
             if step < 5:
-                log.error("failing early — aborting")
+                log.error("failing early: aborting")
                 return None, None
             continue
 

@@ -1,12 +1,12 @@
 """
 Fine-tune Gemma 4 on Bengali OCR data using mlx-vlm LoRA.
 
-Uses the patched mlx-vlm from /Users/macmini/projects/mlx-vlm/ which
+Uses a locally patched mlx-vlm (docs/decision_log.md, Decision 3) which
 fixes NaN gradients in Gemma 4 vision training (3 bugs: -inf mask,
 .item() autograd break, @mx.compile gradient block).
 
 Dataset: rifathridoy/bengali-ocr-synthetic (27K train, 3K test)
-Model: SuperGemma4-26B-MLX-4bit (Gemma 4 architecture, 14 GB)
+Model: Gemma 4 E4B, mlx-community/gemma-4-e4b-it-4bit (override with GEMMA_MODEL_PATH)
 Method: LoRA (rank=16, alpha=32) on language model linear layers
 
 Evaluated via CER/WER on held-out test split.
@@ -29,8 +29,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# Paths
-MODEL_PATH = "/Users/macmini/models/gemma-4-e4b-it-4bit"
+# Paths (MODEL_PATH: local dir or Hugging Face repo id, passed to mlx_vlm.load)
+MODEL_PATH = os.environ.get("GEMMA_MODEL_PATH", "mlx-community/gemma-4-e4b-it-4bit")
 DATA_DIR = Path("data/bengali-ocr-synthetic")
 RESULTS_DIR = Path("results")
 ADAPTER_DIR = Path("results/adapters/bengali_ocr_lora")
@@ -188,7 +188,7 @@ def run_finetuning(train_data, test_data):
             import traceback
             traceback.print_exc()
             if step < 3:
-                log.error("failing on early steps — likely model/data incompatibility. Aborting.")
+                log.error("failing on early steps: likely model/data incompatibility. Aborting.")
                 return None
             continue
 
